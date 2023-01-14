@@ -15,7 +15,7 @@
  * https://www.processwire.com
  *
  */
-class TagsToFolder extends WireData implements Module, ConfigurableModule {
+class TagsToFolders extends WireData implements Module, ConfigurableModule {
 
 	public function ready() {
 		$path = "{$this->config->paths->$this}{$this}.css";
