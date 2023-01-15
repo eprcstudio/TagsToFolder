@@ -15,7 +15,7 @@
  * https://www.processwire.com
  *
  */
-class TagsToFolders extends WireData implements Module, ConfigurableModule {
+class TagsToFolders extends WireData implements Module {
 
 	public function ready() {
 		$path = "{$this->config->paths->$this}{$this}.css";
@@ -35,7 +35,6 @@ class TagsToFolders extends WireData implements Module, ConfigurableModule {
 				$item = $this->{$type}->get($id);
 				if(!$item->hasTag($tag)) {
 					unset($data["list"][$key]);
-					continue;
 				}
 			}
 		} else {
