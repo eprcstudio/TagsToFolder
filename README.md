@@ -7,4 +7,6 @@ Modules directory: https://processwire.com/modules/tags-to-folders/
 
 Support forum: https://processwire.com/talk/topic/28027-tags-to-folders/
 
+## About
+
 This is a simple module that can help you declutter your templates/fields menu by organising them in folders using tags. I initially envisionned this module to be used for cases where fields and/or templates were created by modules and thus not polute the ones created by the user.
