@@ -21,11 +21,12 @@ class TagsToFolders extends WireData implements Module {
 		$path = "{$this->config->paths->$this}{$this}.css";
 		$url = "{$this->config->urls->$this}{$this}.css";
 		$this->config->styles->add("$url?v=" . filemtime($path));
-		$this->addHookAfter("ProcessTemplate::executeNavJSON", $this, "manipulateTemplateMenu");
-		$this->addHookAfter("ProcessField::executeNavJSON", $this, "manipulateTemplateMenu");
+		$this->addHookAfter("ProcessTemplate::executeNavJSON", $this, "manipulateMenu");
+		$this->addHookAfter("ProcessField::executeNavJSON", $this, "manipulateMenu");
+		// $this->addHookBefore("ProcessUser::executeNavJSON", $this, "manipulateUserMenu");
 	}
 
-	public function manipulateTemplateMenu(HookEvent $event) {
+	public function manipulateMenu(HookEvent $event) {
 		$type = $event->object->getModuleInfo()["title"] === "Templates" ? "templates" : "fields";
 		$data = json_decode($event->return, true);
 		if($tag = $this->input->get("tag")) {
@@ -33,7 +34,10 @@ class TagsToFolders extends WireData implements Module {
 			foreach($data["list"] as $key => $info) {
 				$id = trim(strstr($info["url"], "id="), "id=");
 				$item = $this->{$type}->get($id);
-				if(!$item->hasTag($tag)) {
+				if(
+					($tag === "system" && !$this->isSystem($item))
+					|| ($tag !== "system" && !$item->hasTag($tag))
+				) {
 					unset($data["list"][$key]);
 				}
 			}
@@ -43,7 +47,10 @@ class TagsToFolders extends WireData implements Module {
 			foreach($data["list"] as $info) {
 				$id = trim(strstr($info["url"], "id="), "id=");
 				$item = $this->{$type}->get($id);
-				if(!strlen($item->tags)) {
+				if($this->isSystem($item)) {
+					if(!in_array("system", $tags)) $tags[] = "system";
+					continue;
+				} elseif(!strlen($item->tags)) {
 					$untagged[] = $info;
 					continue;
 				}
@@ -59,14 +66,24 @@ class TagsToFolders extends WireData implements Module {
 				$data["list"][] = array(
 					"url" => $data["url"],
 					"label" => $tag,
-					"icon" => "tags",
+					"icon" => $tag === "system" ? "gear" : "tags",
 					"className" => "tag",
-					"navJSON" => "{$data["url"]}navJSON?tag=$tag",
+					"navJSON" => "$data[url]navJSON?tag=$tag",
 				);
 			}
 			$data["list"] = array_merge($data["list"], $untagged);
 		}
 		$data['list'] = array_values($data['list']); 
 		$event->return = json_encode($data);
+	}
+
+	private function isSystem($item) {
+		if(!$class = wireInstanceOf($item, ["Template", "Field"])) return false;
+		if($class == "ProcessWire\Field" && in_array($item->name, array('title', 'email'))) return false;
+		return $item->flags & ($class == "ProcessWire\Template" ? Template::flagSystem : Field::flagSystem);
+	}
+
+	public function manipulateUserMenu(HookEvent $event) {
+		// todo, see /wire/modules/Process/ProcessUser/ProcessUser.module#L77
 	}
 }
