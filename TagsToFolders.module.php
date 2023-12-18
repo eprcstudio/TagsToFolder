@@ -27,7 +27,7 @@ class TagsToFolders extends WireData implements Module {
 	}
 
 	public function manipulateMenu(HookEvent $event) {
-		$type = $event->object->getModuleInfo()["title"] === "Templates" ? "templates" : "fields";
+		$type = $event->object->getModuleInfo()["searchable"];
 		$data = json_decode($event->return, true);
 		if($tag = $this->input->get("tag")) {
 			unset($data["add"]);
