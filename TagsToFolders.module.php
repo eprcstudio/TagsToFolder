@@ -15,7 +15,12 @@
  * https://www.processwire.com
  *
  */
-class TagsToFolders extends WireData implements Module {
+class TagsToFolders extends WireData implements Module, ConfigurableModule {
+
+	public function __construct() {
+		parent::__construct();
+		$this->set("hideSystem", false); 
+	}
 
 	public function ready() {
 		$path = "{$this->config->paths->$this}{$this}.css";
@@ -48,15 +53,16 @@ class TagsToFolders extends WireData implements Module {
 				$id = trim(strstr($info["url"], "id="), "id=");
 				$item = $this->{$type}->get($id);
 				if($this->isSystem($item)) {
-					if(!in_array("system", $tags)) $tags[] = "system";
-					continue;
+					if(!in_array("system", $tags) && !$this->hideSystem) {
+						$tags[] = "system";
+					}
 				} elseif(!strlen($item->tags)) {
 					$untagged[] = $info;
 					continue;
 				}
 				foreach($item->getTags() as $tag) {
 					if(empty($tag)) continue;
-					$tag = ltrim($tag, '-');
+					$tag = ltrim($tag, "-");
 					if(!in_array($tag, $tags)) $tags[] = $tag;
 				}
 			}
@@ -73,17 +79,27 @@ class TagsToFolders extends WireData implements Module {
 			}
 			$data["list"] = array_merge($data["list"], $untagged);
 		}
-		$data['list'] = array_values($data['list']); 
+		$data["list"] = array_values($data["list"]); 
 		$event->return = json_encode($data);
 	}
 
 	private function isSystem($item) {
 		if(!$class = wireInstanceOf($item, ["Template", "Field"])) return false;
-		if($class == "ProcessWire\Field" && in_array($item->name, array('title', 'email'))) return false;
+		if($class == "ProcessWire\Field" && in_array($item->name, array("title", "email"))) return false;
 		return $item->flags & ($class == "ProcessWire\Template" ? Template::flagSystem : Field::flagSystem);
 	}
 
 	public function manipulateUserMenu(HookEvent $event) {
 		// todo, see /wire/modules/Process/ProcessUser/ProcessUser.module#L77
+	}
+
+	public function getModuleConfigInputfields(InputfieldWrapper $inputfields) {
+		$f = $inputfields->InputfieldToggle;
+		$f->label = $this->_("Hide “system” tag?");
+		$f->description = $this->_("When enabled the folder “system” will be hidden. Note fields/templates tagged with “system” and any other tag will still appear in the other tag’s folder"); 
+		$f->icon = "gear";
+		$f->name = "hideSystem";
+		$f->value = (bool) $this->hideSystem;
+		$inputfields->add($f);
 	}
 }
